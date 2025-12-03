@@ -8,7 +8,7 @@ In this project, I will use the embeddable Watson AI libraries to create an emot
 
 Emotion detection extends the concept of sentiment analysis by extracting finer emotions like joy, sadness, anger, and so on, from statements rather than just whether a statement is positive or negative. Emotion detection is widely used for AI based recommendation systems, chatbots, and so on.
 
-# 1. Creating an emotion detection system using Watson NLP library
+## 1. Creating an emotion detection system using Watson NLP library
 The Watson NLP libraries are embedded, so only need to send a post request to the correct function in the library and receive the output.
 steps:
 1. Create `emotion_detector` function in `emotion_detection.py` file
@@ -55,7 +55,7 @@ Example API response
 }
 ```
 
-## Testing function
+### Testing function
 * Open a python shell and import function
 ```pythoh
 from emotion_detection import emotion_detector
@@ -70,7 +70,7 @@ Example output:
 {'anger': 0.010043259, 'disgust': 0.016082913, 'fear': 0.051737938, 'joy': 0.9262508, 'sadness': 0.04585947, 'dominant_emotion': 'joy'}
 ```
 
-# 2. Packaging the application
+## 2. Packaging the application
 1. Create the `EmotionDetection` folder and place `emotion_detection.py` inside along with `__init__` file to reference the module.
 2. Test the package by importing it in a python shell
 ```pyton
@@ -84,7 +84,7 @@ Example output:
 {'anger': 0.64949876, 'disgust': 0.03718168, 'fear': 0.05612277, 'joy': 0.00862553, 'sadness': 0.1955148, 'dominant_emotion': 'anger'}
 ```
 
-# 3. Unit tests
+## 3. Unit tests
 1. Create `test_emotion_detection.py` test file and add a unit test to test `emotion_detector`.
 2. Test the following statements
     * "Im glad this happened" = "joy"
@@ -102,7 +102,7 @@ Ran 1 test in 0.706s
 OK
 ```
 
-# 4. Web deployment of the application using flask
+## 4. Web deployment of the application using flask
 1. `index.html` is a simple html file with a text area where the user enters the sentence to be analysed.
 2. The user clicks the Run button which triggers a JavaScript function in `emotion.js`
 3. `emotion.js` sends a GET request to our `emotionDetector` endpoint to get the result, then sets the result on the UI
@@ -112,7 +112,7 @@ OK
 Example output:
 ![deployed-ui](./images/deployed-ui.png)
 
-# 5. Incorporating Error handling
+## 5. Incorporating Error handling
 1. use `response.raise_for_status()` to automatically raise HTTPError for bad requests
 2. If predictions or emotions are empty, return json with None values for predictions
 3. Handle `HTTPError` (API responds with bad status eg 400) and `RequestException` (request itself fails before the API even responds eg. no internet connection, invalid url, timeout) errors by printing a useful message and returning the empty prediction json object.
@@ -121,7 +121,7 @@ Example output:
 UI output:
 ![error-handling-interface](./images/error_handling_interface.png)
 
-# 6. Running static code analysis on project
+## 6. Running static code analysis on project
 * Check the code as per the PEP8 guidlines by running static code analysis
 * Normally, this should be done at the time od packaging and unit testing 
 * Fix the items it mentions to increase score close to 10
@@ -146,3 +146,37 @@ server.py:16:0: C0116: Missing function or method docstring (missing-function-do
 -----------------------------------
 Your code has been rated at 5.38/10
 ```
+
+## Dockerising the container
+Docker allows you to package your app and its dependencies into a single container. This ensures your app runs consistently accross different environmentts, making it easy to deploy, share, and scale your app.
+
+The Dockerfile describes the steps to build this container, including installing Python, required libraries, copying your code, and starting the Flask server. Once built, you can run your app anywhere Docker is available.
+
+Docker Compose is like combining the docker build and docker run commands (with all their parameters) into a single configuration file. It lets you define how to build your image, set environment variables, map ports, and manage multiple containers—all in one place. Then you just run `docker-compose up` to build and start everything as described in the file.
+
+### .dockerignore
+* The `.dockerignore` file lists files and folders that should be excluded from the Docker build context. This keeps your Docker image smaller and prevents sensitive or unnecessary files (like virtual environments, editor settings, and cache files) from being added to the container.
+
+### Dockerfile
+1. Use `python:3.10-slim`, a lightweight version of python
+2. Set workin dir inside continer
+3. install requirements - `--no-cache-dir` prevents pip from storing downloaded packages in cache, keeping the image smaller
+4. Document port 5000
+
+#### Build the Docker image
+`docker build -t emotion-detection-app .`
+
+#### Run the container from Docker image
+`docker run -p 5000:5000 emotion-detection-app`
+
+### docker-compose.yml
+1. Define version of docker compose file format - `3.8` is a commonly used modern version
+2. Define emotion-detection service. A service is a containerized application managed by Docker Compose.
+3. `build: .` tells Docker Compose to build the image for this service using the Dockerfile in the current directory.
+Then use: docker-compose up --build
+4. Map port 5000 on your computer (host) to port 5000 in the container.
+
+#### Run the container with Docker Compose
+* `docker-compose up` starts the container using the existing image if one exists (like if you build one from your image above ^)
+* `docker-compose up --build` forces Docker Compose to rebuild the image before starting the container
+* Your application will be accessible at http://localhost:5000.
