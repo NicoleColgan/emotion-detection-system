@@ -1,7 +1,18 @@
 version: '3.8'  # version of docker compose file format
 
 services:
+  qdrant: # docker will create an internat network where your service name is reachable from your app
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
   emotion-detection:
+    image: "emotion-detection-app"
     build: .
     ports:
       - "5000:5000"
+
+volumes:
+  qdrant_data:

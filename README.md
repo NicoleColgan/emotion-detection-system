@@ -180,3 +180,76 @@ Then use: docker-compose up --build
 * `docker-compose up` starts the container using the existing image if one exists (like if you build one from your image above ^)
 * `docker-compose up --build` forces Docker Compose to rebuild the image before starting the container
 * Your application will be accessible at http://localhost:5000.
+
+
+### Setting up Quadrant db
+the docker compose created teh quadrant image so you can seperately - docker run -p 6333:6333 qdrant/qdrant
+even if you have muliple services in your dockocmpose, you can run them seperately by name like 
+docker-compose up qdrant 
+
+you can run a service in the foreg with docker-compose run --service-ports emotion-detection
+now if you add `breakpoint()` in your python files, your in the python debugger inside the docker container -> curl -X GET http://localhost:5000/api/search_feedback?query=hello
+What you can do now:
+At the (Pdb) prompt, you can type commands to inspect and control your code:
+n — step to the next line
+c — continue execution until the next breakpoint
+l — list source code around the current line
+p variable_name — print the value of a variable (e.g., p text)
+s - step into 
+q — quit the debugger
+enter moved to next line too
+
+(Pdb) l
+ 64         """
+ 65         Semantic search over stored feedback using Qdrant.
+ 66         Returns a list of payloads with text + emotions.
+ 67         """
+ 68         breakpoint()
+ 69  ->     ensure_collection()
+ 70         query_vec = embed_text(query)
+ 71
+ 72         hits = qdrant.search(
+ 73             collection_name=COLLECTION_NAME,
+ 74             query_vector=query_vec,
+
+
+
+ does it work for strings
+
+
+ docker build -t emotion-detection-app .
+ docker-compose run --service-ports emotion-detection
+
+ get search looks ok when the query string is one word and theres nothing in the db - need to test for valid entries
+
+C:\Users\colgann>curl -X POST http://localhost:5000/api/analyse_and_store -H "Content-Type: application/json" -d "{\"text\": \"I am really happy with this service\"}"
+
+-> qdrant.upsert(
+(Pdb) p payload
+{'text': 'I am really happy with this service', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}
+(Pdb)
+
+C:\Users\colgann>curl -X POST http://localhost:5000/api/analyse_and_store -H "Content-Type: application/json" -d "{\"text\": \"I am really happy with this service\"}"
+{
+  "analysis": {
+    "anger": 0.016279602,
+    "disgust": 0.01874656,
+    "dominant_emotion": "joy",
+    "fear": 0.05179948,
+    "joy": 0.88792956,
+    "sadness": 0.06251001
+  },
+  "text": "I am really happy with this service"
+}
+
+multiple inserts are working - im putting in one thats not simlar right now so we can test it - it should get no matches but the other should
+
+![qdrant](./images/Qdrant.png)
+![qdrant-similar](./images/Qdrant-similar.png)
+
+
+see result for anger - 
+(Pdb) p result.points
+[ScoredPoint(id='ffc30a96-0a9c-4b0c-bdfa-ca13a99013ed', version=4, score=0.9999999, payload={'text': 'I am so angry', 'dominant_emotion': 'anger', 'emotions': {'anger': 0.85, 'disgust': 0.05, 'fear': 0.05, 'joy': 0.01, 'sadness': 0.04}}, vector=None, shard_key=None, order_value=None), ScoredPoint(id='66d96be4-4456-4a66-8e95-61fbabeaa1d0', version=3, score=0.4017858, payload={'text': 'I am really happy', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}, vector=None, shard_key=None, order_value=None), ScoredPoint(id='a94a6d7e-c54e-4db5-9310-e5697fde1646', version=2, score=0.31094876, payload={'text': 'I am really happy with this', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}, vector=None, shard_key=None, order_value=None)]
+
+you can see that "I am so angry is nearly a perfect match so that comes back first) - do more research on how the emotions change it

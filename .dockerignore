@@ -4,5 +4,6 @@ env
 .env
 .venv
 .vscode
-# readme??
-# do i really need this file???
+*.md
+.git
+*.log
