@@ -14,6 +14,8 @@ def emotion_detector(text_to_analyse):
         'sadness': None,
         'dominant_emotion': None
     }
+    # can uncomment below and comment out try catch for testing
+    #return {'anger': 0.85, 'disgust': 0.05, 'fear': 0.05, 'joy': 0.01, 'sadness': 0.04, 'dominant_emotion': 'anger'}
 
     try:
         # Send post request to API
