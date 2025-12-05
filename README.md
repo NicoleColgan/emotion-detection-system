@@ -182,74 +182,125 @@ Then use: docker-compose up --build
 * Your application will be accessible at http://localhost:5000.
 
 
-### Setting up Quadrant db
-the docker compose created teh quadrant image so you can seperately - docker run -p 6333:6333 qdrant/qdrant
-even if you have muliple services in your dockocmpose, you can run them seperately by name like 
-docker-compose up qdrant 
-
-you can run a service in the foreg with docker-compose run --service-ports emotion-detection
-now if you add `breakpoint()` in your python files, your in the python debugger inside the docker container -> curl -X GET http://localhost:5000/api/search_feedback?query=hello
-What you can do now:
-At the (Pdb) prompt, you can type commands to inspect and control your code:
-n — step to the next line
-c — continue execution until the next breakpoint
-l — list source code around the current line
-p variable_name — print the value of a variable (e.g., p text)
-s - step into 
-q — quit the debugger
-enter moved to next line too
-
-(Pdb) l
- 64         """
- 65         Semantic search over stored feedback using Qdrant.
- 66         Returns a list of payloads with text + emotions.
- 67         """
- 68         breakpoint()
- 69  ->     ensure_collection()
- 70         query_vec = embed_text(query)
- 71
- 72         hits = qdrant.search(
- 73             collection_name=COLLECTION_NAME,
- 74             query_vector=query_vec,
-
-
-
- does it work for strings
-
-
- docker build -t emotion-detection-app .
- docker-compose run --service-ports emotion-detection
-
- get search looks ok when the query string is one word and theres nothing in the db - need to test for valid entries
-
-C:\Users\colgann>curl -X POST http://localhost:5000/api/analyse_and_store -H "Content-Type: application/json" -d "{\"text\": \"I am really happy with this service\"}"
-
--> qdrant.upsert(
-(Pdb) p payload
-{'text': 'I am really happy with this service', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}
-(Pdb)
-
-C:\Users\colgann>curl -X POST http://localhost:5000/api/analyse_and_store -H "Content-Type: application/json" -d "{\"text\": \"I am really happy with this service\"}"
-{
-  "analysis": {
-    "anger": 0.016279602,
-    "disgust": 0.01874656,
-    "dominant_emotion": "joy",
-    "fear": 0.05179948,
-    "joy": 0.88792956,
-    "sadness": 0.06251001
-  },
-  "text": "I am really happy with this service"
-}
-
-multiple inserts are working - im putting in one thats not simlar right now so we can test it - it should get no matches but the other should
-
+## Setting up Qdrant
 ![qdrant](./images/Qdrant.png)
+
+### What is Qdrant
+Qdrant is an open-source vector database desinged for efficient storage and searching of vector embeddings. In this project, it’s used to store customer feedback as vector embeddings and enable semantic search over stored feedback.
+
+### Qdrant set up in Docker Compose
+* qdrant service runs the Qdrant database in a container exposing port 6333 for API access
+* The `qdrant_data` volume persists Qdrant's data on your machine so your db isnt lost when you stop or restart the container.
+    * Docker volumes are special folders managed by docker.
+    * The line `- qdrant_data:/qdrant/storage` means all data written to this volume when the container is running will also be saved to your machine
+* Running `docker-compose up` runs both of the containers on the same network so they can communicate
+
+### Quadrant integration in code
+#### server.py
+* Add two new endpoints for interacting with the database:
+    * `/api/analyse_and_store`: 
+        * POST endpoint for storing entries into the database.
+        * Extracts body from request, calls emotion_detector then stores results in database
+        * returns text and emotion detection result
+    * `search_feedback_endpoint`: 
+        * GET endpoint for semantic searching over database
+        * Extracts query from url and sends to `embeddings.py` to search the database
+        * returns similarity results
+
+#### embeddings.py
+* Connect to Qdrant using the docker-compose service name (`qdrant`) on port 6333
+* Ensure the feedback collection exists, and if not create it with the correct size and similarity metric
+* Embed text using the `SentenceTransformerModel` to convert the feedback to a vector embedding
+* Store feedback and metadata in Qdrant. 
+    * The embedded text plus metadata (the emotion detection result) are stored in the database as a point using the upsert function.
+    * The upsert function "updates or inserts" one or many points into the db. if a point with that id exists, it will update it, otherwise, it will create a new one.
+    * A point is a single entry into the database and it must have a unique id. I generated one with the `uuid4()`
+    * The metadata is stored as the payload. This does not affect the embedding or similarity search.
+* Similarity search on a piece of text:
+    *  Create embedding for text
+    * Query quadrant passing it the query vector, the ammount of results you want, whether or not you want the payload that contains the emotino detection results, and whether or not you want the actual vector.
+    * format results by extracting id, similarity (score) and payload and return matches.
+    * The higher the score, the more similar the vector
+
+### Usage
+#### Docker
+* To run both of the containers from existing images:
+    ```bash
+    docker-compose up
+    ```
+* to seperately run the images:
+    ```bash
+    docker run -p 6333:6333 qdrant/qdrant
+    docker build -t emotion-detection-app .
+    ```
+* To rebuild both of the images and then run the containers:
+    ```bash
+    docker-compose up --build
+    ```
+* To run containers seperately by service name:
+    ```bash
+    docker-compose up qdrant
+    ```
+* To run a app in the foreground (useful for debugging):
+    ```bash
+    docker-compose run --service-ports emotion-detection
+    ```
+
+##### Debugging in Docker
+* To debug the python file, run it in the foreground then add `breakpoint()` statements in the code whereever you want to add a break point
+* Trigger the code to hit the breakpoint eg. by hitting an endpoint
+* This will open the python debugger. you will see `(Pdb)` in your command line and you can type commands to interact with the debugger.
+    * n — step to the next line
+    * c — continue execution until the next breakpoint
+    * l — list source code around the current line
+    * p variable_name — print the value of a variable (e.g., p text)
+    * s - step into 
+    * q — quit the debugger
+* The debugger will print the code to console so you can keep track of the current line, for example:
+    ```python
+        (Pdb) l
+    64         """
+    65         Semantic search over stored feedback using Qdrant.
+    66         Returns a list of payloads with text + emotions.
+    67         """
+    68         breakpoint()
+    69  ->     ensure_collection()
+    70         query_vec = embed_text(query)
+    71
+    72         hits = qdrant.search(
+    73             collection_name=COLLECTION_NAME,
+    74             query_vector=query_vec,
+    ```
+#### Endpoints
+##### /api/analyse_and_store
+* Send POST request with the text in json format to store it in the database:
+    ```bash
+    curl -X POST http://localhost:5000/api/analyse_and_store -H "Content-Type: application/json" -d "{\"text\": \"I am really happy with this service\"}"
+    ```
+* result:
+    ```bash
+    {
+    "analysis": {
+        "anger": 0.016279602,
+        "disgust": 0.01874656,
+        "dominant_emotion": "joy",
+        "fear": 0.05179948,
+        "joy": 0.88792956,
+        "sadness": 0.06251001
+    },
+    "text": "I am really happy with this service"
+    }
+    ```
+##### /api/search_feedback
+* Send GET request with the string you want to do a similarity search for:
+    ```bash
+    curl -X GET "http://localhost:5000/api/search_feedback?query=I%20am%20so%20angry%20"
+    ```
+    > Note: quotes and "%20" for space encoding are important
+* result:
+    ```bash
+    [ScoredPoint(id='ffc30a96-0a9c-4b0c-bdfa-ca13a99013ed', version=4, score=0.9999999, payload={'text': 'I am so angry', 'dominant_emotion': 'anger', 'emotions': {'anger': 0.85, 'disgust': 0.05, 'fear': 0.05, 'joy': 0.01, 'sadness': 0.04}}, vector=None, shard_key=None, order_value=None), ScoredPoint(id='66d96be4-4456-4a66-8e95-61fbabeaa1d0', version=3, score=0.4017858, payload={'text': 'I am really happy', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}, vector=None, shard_key=None, order_value=None), ScoredPoint(id='a94a6d7e-c54e-4db5-9310-e5697fde1646', version=2, score=0.31094876, payload={'text': 'I am really happy with this', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}, vector=None, shard_key=None, order_value=None)]
+    ```
+* Notice when I search for "I am so angry" which is already in the database, we get back the encoding with that text which has almost a perfect score as the top result
+
 ![qdrant-similar](./images/Qdrant-similar.png)
-
-
-see result for anger - 
-(Pdb) p result.points
-[ScoredPoint(id='ffc30a96-0a9c-4b0c-bdfa-ca13a99013ed', version=4, score=0.9999999, payload={'text': 'I am so angry', 'dominant_emotion': 'anger', 'emotions': {'anger': 0.85, 'disgust': 0.05, 'fear': 0.05, 'joy': 0.01, 'sadness': 0.04}}, vector=None, shard_key=None, order_value=None), ScoredPoint(id='66d96be4-4456-4a66-8e95-61fbabeaa1d0', version=3, score=0.4017858, payload={'text': 'I am really happy', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}, vector=None, shard_key=None, order_value=None), ScoredPoint(id='a94a6d7e-c54e-4db5-9310-e5697fde1646', version=2, score=0.31094876, payload={'text': 'I am really happy with this', 'dominant_emotion': 'joy', 'emotions': {'anger': 0.016279602, 'disgust': 0.01874656, 'fear': 0.05179948, 'joy': 0.88792956, 'sadness': 0.06251001}}, vector=None, shard_key=None, order_value=None)]
-
-you can see that "I am so angry is nearly a perfect match so that comes back first) - do more research on how the emotions change it

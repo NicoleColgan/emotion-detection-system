@@ -1,19 +1,22 @@
 from typing import List, Dict, Any
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams
-from sentence_transformers import SentenceTransformer
+from qdrant_client.models import Distance, VectorParams # model classes for configuring vector search
+from sentence_transformers import SentenceTransformer   # generating text embeddings
 import uuid
 
 COLLECTION_NAME = "feedback_emotions"
 
-# Qdrant runs in Docker under the service name 'qdrant'
-qdrant = QdrantClient(host="qdrant", port=6333)
+# Connect to Qdrant using the docker-compose service name (`qdrant`) on port 6333
+qdrant = QdrantClient(host="qdrant", port=6333) 
 
-# Small, fast embedding model
+# Load a small, fast embedding model for generating text embeddings
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 
 def ensure_collection() -> None:
+    """
+    Ensures the Qdrant collection exists before storing or searching data.
+    """
     collections = qdrant.get_collections().collections
     names = [c.name for c in collections]
 
@@ -29,8 +32,8 @@ def ensure_collection() -> None:
 
 def embed_text(text: str) -> List[float]:
     """Convert text into an embedding vector."""
-    emb = model.encode(text)
-    return emb.tolist()
+    emb = model.encode(text)    # create embedding
+    return emb.tolist() # convert numpy array to python list
 
 
 def store_feedback(text: str, emotion_result: Dict[str, Any]) -> None:
@@ -49,14 +52,15 @@ def store_feedback(text: str, emotion_result: Dict[str, Any]) -> None:
             k: v for k, v in emotion_result.items() if k != "dominant_emotion"
         },
     }
-    breakpoint()
+
+    # update/insert - if the id is already there, it will just update
     qdrant.upsert(
         collection_name=COLLECTION_NAME,
-        points=[
+        points=[    # a point is a single entry into the db - you can insert one or many at the same time
             {
                 "id": str(uuid.uuid4()),
                 "vector": vector,
-                "payload": payload,
+                "payload": payload, # extra data attatched to the vector - doesnt effect embedding/similarity search
             }
         ],
     )
@@ -69,16 +73,15 @@ def search_feedback(query: str, limit: int = 3) -> List[Dict[str, Any]]:
     """
     ensure_collection()
     query_vec = embed_text(query)
-    breakpoint()
 
     try:
         # query quandrant with API
         result = qdrant.query_points(
             collection_name=COLLECTION_NAME,
-            query=query_vec,
-            limit=limit,
-            with_payload=True,
-            with_vectors=False,
+            query=query_vec,    # find similar vectors to thid one
+            limit=limit,    # number of results
+            with_payload=True,  # return payload
+            with_vectors=False, # omit actual vector
         )
 
         # extract payloads and scored cleanly
@@ -86,7 +89,7 @@ def search_feedback(query: str, limit: int = 3) -> List[Dict[str, Any]]:
         for point in result.points:
             similarities.append({
                 "id": point.id,
-                "score": point.score,
+                "score": point.score,   # similarity
                 "payload": point.payload
             })
 
