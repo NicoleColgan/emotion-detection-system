@@ -12,6 +12,10 @@ qdrant = QdrantClient(host="qdrant", port=6333)
 # Load a small, fast embedding model for generating text embeddings
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
+def count_points() -> int:
+    ensure_collection()
+    return qdrant.count(collection_name=COLLECTION_NAME).count
+
 
 def ensure_collection() -> None:
     """
