@@ -12,23 +12,23 @@ This project is a fully containerised AI microservice that:
 * Runs locally using Docker + Docker Compose (AI sandbox pattern)
 
 This end-to-end system demonstrates practical skills in:
-✔ NLP
-✔ Vector databases
-✔ API design
-✔ Dockerised microservices
-✔ Semantic search
-✔ Error handling & testing
-✔ Monitoring/debugging with Qdrant UI
+* NLP
+* Vector databases
+* API design
+* Dockerised microservices
+* Semantic search
+* Error handling & testing
+* Monitoring/debugging with Qdrant UI
 
 ⸻
 
 ## 🛠 Tech Stack
-**Backend**: Python, Flask
-**AI/NLP**: Watson NLP, SentenceTransformers
-**Vector DB**: Qdrant (Dockerised)
-**Search**: Cosine similarity
-**DevOps**: Docker, Docker Compose, Pylint
-**Frontend**: HTML, JavaScript (basic UI)
+* **Backend**: Python, Flask
+* **AI/NLP**: Watson NLP, SentenceTransformers
+* **Vector DB**: Qdrant (Dockerised)
+* **Search**: Cosine similarity
+* **DevOps**: Docker, Docker Compose, Pylint
+* **Frontend**: HTML, JavaScript (basic UI)
 
 ⸻
 
@@ -219,11 +219,10 @@ Qdrant Similarity Matches
 
 ## 🎯 Summary
 This project demonstrates:
-
-✔ NLP + Watson + vector embeddings
-✔ Qdrant integration + semantic search
-✔ Clean REST API design
-✔ Dockerised microservices
-✔ Unit testing + static analysis
-✔ Debugging inside containers
-✔ Real AI “sandbox”-style environment
+* NLP + Watson + vector embeddings
+* Qdrant integration + semantic search
+* Clean REST API design
+* Dockerised microservices
+* Unit testing + static analysis
+* Debugging inside containers
+* Real AI “sandbox”-style environment
