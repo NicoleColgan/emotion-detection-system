@@ -4,7 +4,7 @@ Flask server that exposes emotion detection endpoing and renders UI
 
 from flask import Flask, request, render_template, jsonify
 from EmotionDetection.emotion_detection import emotion_detector
-from embeddings import store_feedback, search_feedback
+from embeddings import store_feedback, search_feedback, count_points
 
 app = Flask(__name__)
 
@@ -68,12 +68,16 @@ def search_feedback_endpoint():
         "results": results
     })
     
+@app.route("/health")
+def health():
+    return {"status": "ok"}
 
-
-
-
-
-
+@app.route("/count")
+def count():
+    """
+    Returns number of points in collection
+    """
+    return {"count": count_points()}
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
