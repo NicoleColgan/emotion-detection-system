@@ -8,6 +8,7 @@ This project is a fully containerised, production-ready AI microservice that com
 * **Emotion Detection:** Accurately identifies fine-grained emotions (joy, anger, sadness, disgust, fear) from customer feedback using Watson NLP.
 * **Semantic Search:** Embeds feedback with SentenceTransformers and stores it in Qdrant, enabling fast, context-aware similarity search.
 * **Agentic LLM Workflow:** Integrates OpenAI’s GPT-4 to generate empathetic, context-rich support replies—leveraging both emotion analysis and retrieval-augmented generation.
+* **Streaming LLM responses:** Supports real time token streaming from GPT-4o-mini which displays text to client while it is being generated.
 * **Microservice Architecture:** Exposes a robust REST API via Flask, supporting analysis, storage, semantic search, and agentic reply generation.
 * **DevOps practices:** Runs locally or in the cloud using Docker + Docker Compose, with persistent vector storage and real-time monitoring via Qdrant UI.
 
@@ -29,6 +30,7 @@ This project showcases practical, production-grade AI engineering—ideal for re
 * **Agentic Workflow**: lightweight Retrieval-augmented generation (RAG) style with LLM
 * **DevOps**: Docker, Docker Compose, Pylint
 * **Frontend**: HTML, JavaScript (basic UI)
+
 ---
 
 ## ⚡ Quickstart (Docker — recommended)
@@ -43,6 +45,7 @@ Stops everything:
 docker-compose down
 ```
 > Note: make sure to add your OPENAI_API_KEY to your environment variables
+
 ---
 
 ## 🧠 Architecture Overview
@@ -85,8 +88,10 @@ docker-compose down
 * **server.py** – Flask API (analysis, storage, semantic search, health, count)
 * **emotion_detection.py** – Watson NLP integration
 * **embeddings.py** – embedding + Qdrant client + similarity search + count
+* **agent.py** - LLM agent (GPT-4o-mini) that can stream potential responses to a users sentiment
 * **docker-compose.yml** – Orchestrates Flask + Qdrant services
 * **Qdrant Dashboard** – Real-time inspection of vectors & payloads
+
 ---
 
 ## 📡 API Endpoints
@@ -112,6 +117,7 @@ Response:
   }
 }
 ```
+
 ---
 
 **GET /api/search_feedback?query=…**
@@ -161,6 +167,13 @@ Response:
 }
 ```
 
+**POST /api/suggest_reply_stream**
+Streams LLM response chunk-by-chunk as plain text.
+```bash
+curl -N -X POST http://localhost:5000/api/suggest_reply_stream -H "Content-Type: application/json" -d "{\"text\": \"I am really angry about this\"}"
+```
+> **Note:** `-N` disables curl's buffering so you can see stream in real time.
+
 ---
 
 ## 🧬 Emotion Detection (Watson NLP)
@@ -180,6 +193,7 @@ Example output:
  "dominant_emotion": "joy"
 }
 ```
+
 ---
 
 ## 🔍 Semantic Search (Qdrant + Embeddings)
@@ -235,7 +249,19 @@ LLM (GPT-4o-mini) — generates suggested reply
    ↓
 Structured JSON Response
 ```
+
 ---
+
+## ⏱️Realtime Streaming
+This project supports **token-by-token streaming** from GPT-4o-mini using Flask generators (yield) and the OpenAI streaming API. This enables real-time UI updates (gives the typing effect you see in ChatGPT).
+
+**Why it matters:**
+* User gets results faster
+* Required for chat-style interfaces
+* Mirrors production-grade applications
+
+---
+
 
 ## 🐳 Dockerisation
 ### Dockerfile
@@ -255,6 +281,7 @@ services:
 * Shared Docker network
 * Persistent volume (qdrant_data)
 * Automatic rebuild/run using one command
+
 ---
 
 ## 🧪 Testing & Code Quality
@@ -271,6 +298,7 @@ Run:
 ```bash
 pylint server.py
 ```
+
 ---
 
 ## 🖥 Debugging (with Docker)
@@ -292,6 +320,7 @@ Error Handling Example:
 Qdrant Similarity Matches:
 
 ![qdrant-similarity](./images/Qdrant-similar.png)
+
 ---
 
 ## 🎯 Summary
@@ -300,6 +329,7 @@ This project demonstrates:
 * Qdrant integration and semantic search
 * Retrieval-augmented generation (RAG) and agentic LLM workflows
 * OpenAI GPT-4 integration for empathetic, context-aware replies
+* Real-time streaming of responses from LLM
 * Clean REST API design and robust error handling
 * Dockerised microservices for scalable deployment
 * Unit testing, static analysis, and in-container debugging

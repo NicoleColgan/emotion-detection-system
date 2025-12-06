@@ -2,10 +2,10 @@
 Flask server that exposes emotion detection endpoing and renders UI
 '''
 
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, Response, stream_with_context
 from EmotionDetection.emotion_detection import emotion_detector
 from embeddings import store_feedback, search_feedback, count_points
-from agent import generate_support_reply
+from agent import generate_support_reply, stream_support_reply
 
 app = Flask(__name__)
 
@@ -103,6 +103,29 @@ def suggest_reply():
         print(f"Error in generate_support_reply(): {e}")
         return jsonify({"error": "failed to generate reply"}), 500
 
+@app.route("/api/suggest_reply_stream", methods=["POST"])
+def suggest_reply_stream():
+    """
+    Streaming agent endpoint
+    - Takes text in body
+    - Streams back suggested reply as plain text chunks
+    """
+
+    data = request.get_json() or {}
+    text = data.get("text", "").strip()
+
+    if not text:
+        return jsonify({"error": "Missing 'text' in request body"}), 400
+    def generate():
+        try:
+            for chunk in stream_support_reply(text):    # get next chunk from agent
+                yield chunk # send piece of reply to client as they arrive
+        except Exception as e:
+            # log error and end stream
+            print(f"error in suggest_reply_stream: {e}")
+    # stream_with_context keeps the request data (text) for the generate function
+    # Response wrape the generator so flask can send the chunks as soon as they appear.
+    return Response(stream_with_context(generate()), mimetype="text/plain")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
