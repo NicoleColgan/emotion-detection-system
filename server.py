@@ -5,6 +5,7 @@ Flask server that exposes emotion detection endpoing and renders UI
 from flask import Flask, request, render_template, jsonify
 from EmotionDetection.emotion_detection import emotion_detector
 from embeddings import store_feedback, search_feedback, count_points
+from agent import generate_support_reply
 
 app = Flask(__name__)
 
@@ -34,7 +35,7 @@ def analyse_and_store():
     store it in Qdrant with its emotions,
     and return the analysis.
     """
-    data = request.get_json()
+    data = request.get_json() or {}
     text = data.get("text", "")
 
     if not text:
@@ -78,6 +79,30 @@ def count():
     Returns number of points in collection
     """
     return {"count": count_points()}
+
+@app.route("/api/suggest_reply", methods=["POST"])
+def suggest_reply():
+    """
+    Agent endpoint:
+    - Takes customer feedback text
+    - Runs emotion detection
+    - Fetched similar feedback from Quadrant
+    - Asks LLM to generate an empathetic reply
+    """
+    data = request.get_json() or {}
+    text = data.get("text", "").strip()
+
+    if not text:
+        return jsonify({"error": "Missing 'text' in request body"}), 400
+    
+    try:
+        result = generate_support_reply(text)
+        return jsonify(result)
+    except Exception as e:
+        # Basic safety net so the API doesnt hard crash
+        print(f"Error in generate_support_reply(): {e}")
+        return jsonify({"error": "failed to generate reply"}), 500
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)

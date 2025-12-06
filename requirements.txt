@@ -5,3 +5,5 @@ PyLint
 qdrant-client
 sentence-transformers   # for embeddings model
 torch
+
+openai
