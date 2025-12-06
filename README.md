@@ -20,9 +20,7 @@ This project is a fully containerised, production-ready AI microservice that com
 * Automated **testing**, static analysis, and debugging inside containers
 
 This project showcases practical, production-grade AI engineering—ideal for real-world customer support, workflow automation, and modern AI product development.
----
 
-## 🛠 Tech Stack
 ## 🛠 Tech Stack
 * **Backend**: Python, Flask
 * **AI/NLP**: Watson NLP, SentenceTransformers, **OpenAI GPT-4 (LLM)**
@@ -67,10 +65,10 @@ docker-compose down
          |   Embeddings          |
          +-----------+-----------+
                      |
-   +-----------------+------------------+
-   |           Qdrant Vector DB         |
+   +-----------------+-------------------+
+   |           Qdrant Vector DB          |
    | (store + semantic search + metadata)|
-   +-----------------+------------------+
+   +-----------------+-------------------+
                      |
                      v
           +----------+-----------+
@@ -210,7 +208,6 @@ This endpoint demonstrates real agentic behaviour:
 ```bash
 Tool → Tool → Retrieval → LLM → Structured Output
 ```
----
 
 ### What the Agent Does
 When you call /api/suggest_reply, the system performs a full multi-step pipeline:
@@ -282,16 +279,18 @@ Run app service in foreground:
 docker-compose run --service-ports emotion-detection
 ```
 Use `breakpoint()` anywhere inside the code to open Python debugger in the terminal.
----
 
 ## 📷 UI Preview
-Main App
+Main App:
+
 ![deployed-UI](./images/deployed-ui.png)
 
-Error Handling Example
+Error Handling Example:
+
 ![error-handling](./images/error_handling_interface.png)
 
-Qdrant Similarity Matches
+Qdrant Similarity Matches:
+
 ![qdrant-similarity](./images/Qdrant-similar.png)
 ---
 
