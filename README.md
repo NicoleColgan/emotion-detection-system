@@ -3,14 +3,14 @@ AI-Powered Emotion Analysis, Agentic LLM Workflow & Vector Search (Flask • Wat
 ![UI](./images/deployed-ui.png)
 
 ## 🚀 Project Overview
-This project is a fully containerised, production-ready AI microservice that combines advanced NLP, vector search, and agentic automation:
+This project is a fully containerised, production-ready AI microservice deployed to AWS ECS Fargate, combining advanced NLP, vector search, and agentic automation:
 
 * **Emotion Detection:** Accurately identifies fine-grained emotions (joy, anger, sadness, disgust, fear) from customer feedback using Watson NLP.
 * **Semantic Search:** Embeds feedback with SentenceTransformers and stores it in Qdrant, enabling fast, context-aware similarity search.
 * **Agentic LLM Workflow:** Integrates OpenAI’s GPT-4 to generate empathetic, context-rich support replies—leveraging both emotion analysis and retrieval-augmented generation.
 * **Streaming LLM responses:** Supports real time token streaming from GPT-4o-mini which displays text to client while it is being generated.
 * **Microservice Architecture:** Exposes a robust REST API via Flask, supporting analysis, storage, semantic search, and agentic reply generation.
-* **DevOps practices:** Runs locally or in the cloud using Docker + Docker Compose, with persistent vector storage and real-time monitoring via Qdrant UI.
+* **Cloud Deployment**: Runs locally via Docker Compose and deployed to AWS ECS Fargate for production-style container orchestration
 
 **Key Skills Demonstrated:**
 * Advanced **NLP** and **LLM integration**
@@ -19,6 +19,7 @@ This project is a fully containerised, production-ready AI microservice that com
 * **API engineering** and **error handling**
 * **Dockerised** microservices and scalable deployment
 * Automated **testing**, static analysis, and debugging inside containers
+* Cloud-native deployment with AWS ECS Fargate and ECR
 
 This project showcases practical, production-grade AI engineering—ideal for real-world customer support, workflow automation, and modern AI product development.
 
@@ -281,6 +282,48 @@ services:
 * Shared Docker network
 * Persistent volume (qdrant_data)
 * Automatic rebuild/run using one command
+
+---
+
+## ☁️ Cloud Deployment: AWS ECS Fargate
+This service is deployed to **AWS ECS using Fargate** to demonstrate a production-style container deployment without managing underlying servers.
+
+**Why ECS Fargate was chosen:**
+- **Serverless container execution** - no EC2 instances or OS management required
+- **Easy scaling** by setting task count
+-  **Health management** handled by AWS.
+- **Clear separation of concerns** between application code and infrastructure
+- **Commonly used in production AI and backend systems**
+
+This mirrors how many teams deploy Python-based AI services in real-world environments.
+
+### Deployment highlights:
+- Built and pushed Docker image to **Amazon ECR**
+- Created ECS **Task Definition** with environment variables injected via the task definition
+- Deployed as a **Fargate service** with public networking
+- Configured **Security Groups** to expose the API on port 5000
+- Injected sensitive configuration (OpenAI API key) via environment variables
+- Verified deployment via live /health and API endpoints
+
+### Live Access
+The service runs as a publicly accessible ECS task (IP-based access): http://13.60.202.71:5000
+
+> Note: In production, this would typically sit behind an Application Load Balancer (ALB).  
+> This deployment focuses on ECS fundamentals, container orchestration, and cloud networking.
+
+### Why this matters
+This deployment mirrors how production AI services are run:
+- Long-running API services (not scripts)
+- Cloud-native container execution
+- Secure secret handling
+- Infrastructure-aware AI engineering
+
+### Why ECS Fargate
+- Serverless containers: no EC2/cluster management required.
+- Simple scaling: adjust desired task count; ALB/VPC integration.
+- Security by design: IAM roles for tasks and isolated ENIs.
+- Cost focus: pay per vCPU/memory; no idle hosts to manage.
+- Clean workflow: push to ECR and deploy without managing nodes.
 
 ---
 
