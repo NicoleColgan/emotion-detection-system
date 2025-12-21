@@ -1,27 +1,37 @@
-from typing import Dict, Any, List, Generator
-
+"""Agent workflow class for generating responses to customer feedback"""
+from typing import Any, Generator
 from EmotionDetection.emotion_detection import emotion_detector
 from embeddings import search_feedback
-
 from openai import OpenAI
 
 # Initialise OpenAI client (expects OPENAI_API_KEY in env)
 client = OpenAI()
 
-def generate_support_reply(text: str) -> Dict[str, Any]:
+def generate_support_reply(text: str) -> dict[str, Any]:
     """
+    Generate a customer friendly reply from a text string
+
     Agent workflow:
     1. Detect emotion for incoming feedback
     2. retrieve similar feedback from Qdrant
     3. Ask the LLM to generate a customer friendly reply giving this context
-    """
 
+    Args:
+        text (str): text string to run the agentic workflow on
+    
+    Returns:
+        dict: A results object containing:
+            - 'input_feedback': The original customer feedback
+            - 'detected_emotion': dominant emotion from text
+            - 'suggested_reply': LLM response
+            - 'similar_feedback': similar customer feedback from database
+    """
     # 1. Run emotion detection
     emotions = emotion_detector(text)
     dominant_emotion = emotions.get("dominant_emotion")
 
     # 2. Retrieve similar feedback from Qdrant
-    similar_items: List[Dict[str, Any]] = search_feedback(text) # use type checking for safety
+    similar_items: list[dict[str, Any]] = search_feedback(text) # use type checking for safety
 
     # Build compact string of similar items for the LLM prompt
     similar_items_str = ""
@@ -73,13 +83,19 @@ def generate_support_reply(text: str) -> Dict[str, Any]:
         "similar_feedback": similar_items
     }
 
-def stream_support_reply(text: str) -> Generator[str, None, None]:
+def stream_support_reply(text: str) -> Generator[str, None, None]: # Generator[YieldType, SendType, ReturnType]
     """
     Streaming version of the support agent:
     - Detects emotions
     - Retrieves similar feedback from Qdrant
     - Streams an LLM reply chunk by chunk
     Yields plain text chunks of the reply
+
+    Args:
+        text (str): Customer feedback for which we want to stream a response to
+    
+    Returns:
+        Generator[str, Nonr, None]: The streamed response from the LLM
     """
 
     # 1. Emotion detection
