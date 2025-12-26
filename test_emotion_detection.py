@@ -2,8 +2,9 @@ from EmotionDetection.emotion_detection import emotion_detector
 import unittest
 
 class TestEmotionDetection(unittest.TestCase):
-
+    """"Unit test class for emotion detector"""
     def test_emotion_detector(self):
+        """Test different scenarios on emotion detector"""
         res1 = emotion_detector("Im Glad this happened").get('dominant_emotion')
         self.assertEqual(res1, 'joy')
 
@@ -18,6 +19,5 @@ class TestEmotionDetection(unittest.TestCase):
 
         res5 = emotion_detector("Im really afraid this will happen").get('dominant_emotion')
         self.assertEqual(res5, 'fear')
-             
-        
+               
 unittest.main()
