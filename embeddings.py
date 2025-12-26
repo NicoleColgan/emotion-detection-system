@@ -13,6 +13,12 @@ qdrant = QdrantClient(host="qdrant", port=6333)
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 def count_points() -> int:
+    """
+    Counts how many items are in the database
+    
+    Returns:
+        int: number of items in the database
+    """
     ensure_collection()
     return qdrant.count(collection_name=COLLECTION_NAME).count
 
@@ -34,18 +40,28 @@ def ensure_collection() -> None:
         )
 
 
-def embed_text(text: str) -> List[float]:
-    """Convert text into an embedding vector."""
+def embed_text(text: str) -> list[float]:
+    """
+    Convert text into an embedding vector.
+    
+    Args:
+        text (str): Text to embed
+
+    Returns:
+        list[float]: embedding
+    """
     emb = model.encode(text)    # create embedding
     return emb.tolist() # convert numpy array to python list
 
 
-def store_feedback(text: str, emotion_result: Dict[str, Any]) -> None:
+def store_feedback(text: str, emotion_result: dict[str, Any]) -> None:
     """
     Store the feedback text and its detected emotions in Qdrant.
-    emotion_result is the dict returned by emotion_detector, including dominant_emotion.
-    """
     
+    Args:
+        text (str): text to store in the database
+        emotion_result(dict[str, Any]: emotion detection result from text
+    """
     ensure_collection()
     vector = embed_text(text)
 
@@ -70,10 +86,16 @@ def store_feedback(text: str, emotion_result: Dict[str, Any]) -> None:
     )
 
 
-def search_feedback(query: str, limit: int = 3) -> List[Dict[str, Any]]:
+def search_feedback(query: str, limit: int = 3) -> list[dict[str, Any]]:
     """
     Semantic search over stored feedback using Qdrant.
-    Returns a list of payloads with text + emotions.
+
+    Args:
+        query (str): query to search for in the database
+        limiy (int): optional limit for the ammount of results to return
+
+    Returns:
+        list: payloads with text + emotions representing similar items.
     """
     ensure_collection()
     query_vec = embed_text(query)

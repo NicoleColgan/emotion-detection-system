@@ -28,7 +28,12 @@ def emotion_detector(text_to_analyse: str) -> dict:
 
     try:
         # Send post request to API
-        response = requests.post(url, json=myobj, headers=headers)
+        response = requests.post(
+            url, 
+            json=myobj, 
+            headers=headers,
+            timeout=5   # error handling - service doesnt hang indefinitely
+            )
         response.raise_for_status()  # raise HTTPError automatically for bad request
 
         # convert to JSON
@@ -42,7 +47,7 @@ def emotion_detector(text_to_analyse: str) -> dict:
         if not emotions:
             return empty_result
 
-        dominant_emotion = max(emotions, key=emotions.get)
+        dominant_emotion = max(emotions, key=lambda k: emotions.get(k, 0))  # provide default incase any values are None
         emotions['dominant_emotion'] = dominant_emotion
         return emotions
     # HTTPError is a subclass of RequestException so if you put RequestException catch block first, it will catch the HTTPError too => put HTTPError first
@@ -51,4 +56,7 @@ def emotion_detector(text_to_analyse: str) -> dict:
         return empty_result
     except requests.RequestException as request_exception:
         print(f"API request failed: {request_exception}")
+        return empty_result
+    except Exception as e:
+        print(f"Unknown exception occured:\n{e}")
         return empty_result

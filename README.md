@@ -20,6 +20,7 @@ This project is a fully containerised, production-ready AI microservice deployed
 * **Dockerised** microservices and scalable deployment
 * Automated **testing**, static analysis, and debugging inside containers
 * Cloud-native deployment with AWS ECS Fargate and ECR
+* Comprehensive error handling and logging for API reliability
 
 This project showcases practical, production-grade AI engineering—ideal for real-world customer support, workflow automation, and modern AI product development.
 
@@ -31,6 +32,12 @@ This project showcases practical, production-grade AI engineering—ideal for re
 * **Agentic Workflow**: lightweight Retrieval-augmented generation (RAG) style with LLM
 * **DevOps**: Docker, Docker Compose, Pylint
 * **Frontend**: HTML, JavaScript (basic UI)
+
+---
+
+### 📝 Logging
+
+This service uses Flask’s built-in logger (`app.logger`) for info and error messages. Logs are output to the console by default.
 
 ---
 
@@ -317,13 +324,6 @@ This deployment mirrors how production AI services are run:
 - Cloud-native container execution
 - Secure secret handling
 - Infrastructure-aware AI engineering
-
-### Why ECS Fargate
-- Serverless containers: no EC2/cluster management required.
-- Simple scaling: adjust desired task count; ALB/VPC integration.
-- Security by design: IAM roles for tasks and isolated ENIs.
-- Cost focus: pay per vCPU/memory; no idle hosts to manage.
-- Clean workflow: push to ECR and deploy without managing nodes.
 
 ---
 

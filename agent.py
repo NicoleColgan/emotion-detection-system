@@ -4,7 +4,7 @@ from EmotionDetection.emotion_detection import emotion_detector
 from embeddings import search_feedback
 from openai import OpenAI
 
-# Initialise OpenAI client (expects OPENAI_API_KEY in env)
+# Initialise OpenAI client (expects OPENAI_API_KEY in .env)
 client = OpenAI()
 
 def generate_support_reply(text: str) -> dict[str, Any]:
@@ -31,7 +31,7 @@ def generate_support_reply(text: str) -> dict[str, Any]:
     dominant_emotion = emotions.get("dominant_emotion")
 
     # 2. Retrieve similar feedback from Qdrant
-    similar_items: list[dict[str, Any]] = search_feedback(text) # use type checking for safety
+    similar_items = search_feedback(text) # use type checking for safety
 
     # Build compact string of similar items for the LLM prompt
     similar_items_str = ""
@@ -41,7 +41,7 @@ def generate_support_reply(text: str) -> dict[str, Any]:
         # why put feedback emotion in curly brackets???
         feedback_emotion = item.get("dominant_emotion") or item.get("payload", {}).get("dominant_emotion")
         
-        if feedback_text:
+        if feedback_text and dominant_emotion:
             similar_items_str += f"Example {idx}:\n- Text: {feedback_text}\n- Emotion: {feedback_emotion}\n"
     if not similar_items_str:
         similar_items_str = "\n(No similar past feedback was found in the database)"
@@ -66,16 +66,20 @@ def generate_support_reply(text: str) -> dict[str, Any]:
     Write a short reply (3-5 sentences max)
     """
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",   # lightweight and fast but still high-quality
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.4 # clear but some variety
-    )
-    response_text = response.choices[0].message.content.strip()
-
+    try: 
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",   # lightweight and fast but still high-quality
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.4 # clear but some variety
+        )
+        response_text = response.choices[0].message.content.strip()
+    except Exception:
+        # dont need specific errors because its all related to OpenAI call & app logic
+        print("LLM failed")
+        response_text = "Agent Error"
     return {
         "input_feedback": text,
         "detected_emotion": dominant_emotion,
@@ -97,7 +101,6 @@ def stream_support_reply(text: str) -> Generator[str, None, None]: # Generator[Y
     Returns:
         Generator[str, Nonr, None]: The streamed response from the LLM
     """
-
     # 1. Emotion detection
     emotions = emotion_detector(text)
     dominant_emotion = emotions.get("dominant_emotion")
@@ -134,22 +137,32 @@ def stream_support_reply(text: str) -> Generator[str, None, None]: # Generator[Y
 
     Write a short reply (3-5 sentences max)
     """
-    # Call openAI with streaming enabled
-    stream = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.4, # clear but some variety
-        stream=True,    # API will return a generator that yields chunks as soon as they are available
-    )
+    try:
+        # Call openAI with streaming enabled
+        stream = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.4, # clear but some variety
+            stream=True,    # API will return a generator that yields chunks as soon as they are available
+        )
+    except Exception:
+        print("LLM error")
 
-    # 4. Yield chunks of the reply text as soon as they are available
-    for chunk in stream:    # Iterate over the streamed response - each iteration calls the `next()` function under the hood which gives you the next chunk - this is how we're calling the generator function from openai
-        delta = chunk.choices[0].delta 
-        content_piece = delta.content
-        if not content_piece:
-            continue    # skip role updates or empty chunks
-        # Each chunk contains a small piece of the reply
-        yield delta.content # send the chunk back to the caller as soon as it arrives
+    try:
+        # 4. Yield chunks of the reply text as soon as they are available
+        for chunk in stream:    # Iterate over the streamed response - each iteration calls the `next()` function under the hood which gives you the next chunk - this is how we're calling the generator function from openai
+            delta = chunk.choices[0].delta 
+            content_piece = delta.content
+            if not content_piece:
+                continue    # skip role updates or empty chunks
+            # Each chunk contains a small piece of the reply
+            yield content_piece # send the chunk back to the caller as soon as it arrives
+    except GeneratorExit:
+        print("generator prematurely closed")
+        return  # cleanly exit
+    except Exception as e:
+        print(f"Unexpected streaming error: {e}")
+        yield "(Unexpected streaming error)"
